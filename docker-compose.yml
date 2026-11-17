@@ -1,0 +1,16 @@
+﻿version: '3.8'
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: greenops-db
+    environment:
+      POSTGRES_DB: greenops
+      POSTGRES_USER: greenops_user
+      POSTGRES_PASSWORD: greenops_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - greenops_pgdata:/var/lib/postgresql/data
+
+volumes:
+  greenops_pgdata:
