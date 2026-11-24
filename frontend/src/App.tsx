@@ -3,6 +3,7 @@ import { AppProvider } from './context/AppContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { LandingPage } from './pages/public/LandingPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
+import { WebAuditPage } from './pages/webaudit/WebAuditPage';
 
 function PlaceholderPage({ title, owner }: { title: string; owner: string }) {
   return (
@@ -26,7 +27,7 @@ export function App() {
           {/* Espace Connecté avec Sidebar fixe */}
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/audit-web" element={<PlaceholderPage title="Module 1 : Audit Web & EcoIndex" owner="HAFSAT Marwa" />} />
+            <Route path="/audit-web" element={<WebAuditPage />} />
             <Route path="/git-analyzer" element={<PlaceholderPage title="Module 2 : Analyseur Git & CI/CD" owner="AGBOTON Belvis" />} />
             <Route path="/cloud-simulator" element={<PlaceholderPage title="Module 3 : Simulateur Cloud & RGPD" owner="PINEAU Faizi" />} />
             <Route path="/notifications" element={<PlaceholderPage title="Module 4 : Alertes Email & Cron" owner="RAMALINGAME Shiamamadanki" />} />
