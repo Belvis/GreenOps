@@ -1,0 +1,3 @@
+com\greenops\gitanalyzer\parser\GitUrlParserTest.class
+com\greenops\gitanalyzer\service\CiCarbonCalculatorServiceTest.class
+com\greenops\gitanalyzer\strategy\GitStrategyTest.class

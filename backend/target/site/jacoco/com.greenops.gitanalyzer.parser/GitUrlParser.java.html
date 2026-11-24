@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GitUrlParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">GreenOps Backend</a> &gt; <a href="index.source.html" class="el_package">com.greenops.gitanalyzer.parser</a> &gt; <span class="el_source">GitUrlParser.java</span></div><h1>GitUrlParser.java</h1><pre class="source lang-java linenums">package com.greenops.gitanalyzer.parser;
+
+import com.greenops.gitanalyzer.model.GitProvider;
+import org.springframework.stereotype.Component;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
+@Component
+<span class="fc" id="L10">public class GitUrlParser {</span>
+
+    public ParsedGitUrl parse(String rawUrl) {
+<span class="fc bfc" id="L13" title="All 4 branches covered.">        if (rawUrl == null || rawUrl.isBlank()) {</span>
+<span class="fc" id="L14">            throw new IllegalArgumentException(&quot;L'URL du dépôt Git ne peut pas être vide.&quot;);</span>
+        }
+
+<span class="fc" id="L17">        String trimmed = rawUrl.trim();</span>
+<span class="fc bfc" id="L18" title="All 2 branches covered.">        if (trimmed.endsWith(&quot;/&quot;)) {</span>
+<span class="fc" id="L19">            trimmed = trimmed.substring(0, trimmed.length() - 1);</span>
+        }
+<span class="fc bfc" id="L21" title="All 2 branches covered.">        if (trimmed.endsWith(&quot;.git&quot;)) {</span>
+<span class="fc" id="L22">            trimmed = trimmed.substring(0, trimmed.length() - 4);</span>
+        }
+
+        URI uri;
+        try {
+<span class="fc" id="L27">            uri = new URI(trimmed);</span>
+<span class="nc" id="L28">        } catch (URISyntaxException e) {</span>
+<span class="nc" id="L29">            throw new IllegalArgumentException(&quot;Format d'URL invalide : &quot; + rawUrl, e);</span>
+<span class="fc" id="L30">        }</span>
+
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (!&quot;https&quot;.equalsIgnoreCase(uri.getScheme())) {</span>
+<span class="fc" id="L33">            throw new IllegalArgumentException(&quot;Seules les URLs publiques en HTTPS sont autorisées.&quot;);</span>
+        }
+
+<span class="fc" id="L36">        String host = uri.getHost();</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (host == null) {</span>
+<span class="nc" id="L38">            throw new IllegalArgumentException(&quot;Hôte manquant dans l'URL : &quot; + rawUrl);</span>
+        }
+
+<span class="fc" id="L41">        GitProvider provider = resolveProvider(host.toLowerCase());</span>
+<span class="fc" id="L42">        String path = uri.getPath();</span>
+<span class="pc bpc" id="L43" title="2 of 4 branches missed.">        if (path == null || path.isBlank()) {</span>
+<span class="nc" id="L44">            throw new IllegalArgumentException(&quot;Chemin du dépôt manquant dans l'URL.&quot;);</span>
+        }
+
+<span class="fc" id="L47">        String[] segments = path.replaceFirst(&quot;^/&quot;, &quot;&quot;).split(&quot;/&quot;);</span>
+<span class="pc bpc" id="L48" title="2 of 6 branches missed.">        if (segments.length &lt; 2 || segments[0].isBlank() || segments[1].isBlank()) {</span>
+<span class="fc" id="L49">            throw new IllegalArgumentException(&quot;L'URL doit contenir le propriétaire et le nom du dépôt (ex: https://github.com/owner/repo).&quot;);</span>
+        }
+
+<span class="fc" id="L52">        String owner = segments[0];</span>
+<span class="fc" id="L53">        String repo = segments[1];</span>
+<span class="fc" id="L54">        String normalized = &quot;https://&quot; + host.toLowerCase() + &quot;/&quot; + owner + &quot;/&quot; + repo;</span>
+
+<span class="fc" id="L56">        return new ParsedGitUrl(provider, owner, repo, normalized);</span>
+    }
+
+    private GitProvider resolveProvider(String host) {
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">        if (&quot;github.com&quot;.equals(host) || &quot;www.github.com&quot;.equals(host)) {</span>
+<span class="fc" id="L61">            return GitProvider.GITHUB;</span>
+        }
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">        if (&quot;gitlab.com&quot;.equals(host) || &quot;www.gitlab.com&quot;.equals(host)) {</span>
+<span class="fc" id="L64">            return GitProvider.GITLAB;</span>
+        }
+<span class="fc" id="L66">        throw new IllegalArgumentException(&quot;Fournisseur non supporté : &quot; + host + &quot;. Utilisez github.com ou gitlab.com.&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
