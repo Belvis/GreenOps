@@ -1,0 +1,19 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+GreenOps Backend,com.greenops.gitanalyzer.config,GitAnalyzerHttpConfig,14,0,0,0,4,0,2,0,2,0
+GreenOps Backend,com.greenops,GreenOpsApplication,8,0,0,0,3,0,2,0,2,0
+GreenOps Backend,com.greenops.gitanalyzer.service,GitAnalyzerService,206,0,6,0,57,0,9,0,6,0
+GreenOps Backend,com.greenops.gitanalyzer.service,CiCarbonCalculatorService,20,279,11,28,5,65,11,18,0,9
+GreenOps Backend,com.greenops.gitanalyzer.entity,CiPipelineRun,76,0,0,0,22,0,22,0,22,0
+GreenOps Backend,com.greenops.gitanalyzer.entity,GitRepository,77,0,0,0,22,0,21,0,21,0
+GreenOps Backend,com.greenops.gitanalyzer.controller,GitAnalyzerController,36,0,0,0,8,0,5,0,5,0
+GreenOps Backend,com.greenops.gitanalyzer.model,GitProvider,0,15,0,0,0,3,0,1,0,1
+GreenOps Backend,com.greenops.gitanalyzer.strategy,GitStrategyFactory,7,37,1,3,1,9,1,3,0,2
+GreenOps Backend,com.greenops.gitanalyzer.strategy,GitHubPublicStrategy,17,190,10,14,6,36,10,8,0,6
+GreenOps Backend,com.greenops.gitanalyzer.strategy,GitLabPublicStrategy,21,164,5,7,6,34,5,5,0,4
+GreenOps Backend,com.greenops.gitanalyzer.dto,CiRunEnrichedDto,0,30,0,0,0,1,0,1,0,1
+GreenOps Backend,com.greenops.gitanalyzer.dto,CiRunRawData,0,24,0,0,0,1,0,1,0,1
+GreenOps Backend,com.greenops.gitanalyzer.dto,GitHistoryItemDto,36,0,0,0,1,0,1,0,1,0
+GreenOps Backend,com.greenops.gitanalyzer.dto,GitAnalyzeRequestDto,6,0,0,0,1,0,1,0,1,0
+GreenOps Backend,com.greenops.gitanalyzer.dto,GitAnalysisResultDto,0,36,0,0,0,1,0,1,0,1
+GreenOps Backend,com.greenops.gitanalyzer.parser,ParsedGitUrl,0,21,0,0,0,2,0,2,0,2
+GreenOps Backend,com.greenops.gitanalyzer.parser,GitUrlParser,19,148,7,23,4,29,7,11,0,3

@@ -1,4 +1,4 @@
-﻿package com.greenops;
+package com.greenops;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

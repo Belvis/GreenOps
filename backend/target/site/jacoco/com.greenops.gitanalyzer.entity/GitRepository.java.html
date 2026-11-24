@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GitRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">GreenOps Backend</a> &gt; <a href="index.source.html" class="el_package">com.greenops.gitanalyzer.entity</a> &gt; <span class="el_source">GitRepository.java</span></div><h1>GitRepository.java</h1><pre class="source lang-java linenums">package com.greenops.gitanalyzer.entity;
+
+import com.greenops.gitanalyzer.model.GitProvider;
+import jakarta.persistence.*;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = &quot;git_repositories&quot;)
+public class GitRepository {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private GitProvider provider;
+
+    @Column(nullable = false, length = 120)
+    private String owner;
+
+    @Column(nullable = false, length = 120)
+    private String repoName;
+
+    @Column(name = &quot;normalized_url&quot;, nullable = false, unique = true, length = 255)
+    private String normalizedUrl;
+
+    @Column(name = &quot;total_energy_kwh&quot;, nullable = false)
+    private double totalEnergyKwh;
+
+    @Column(name = &quot;total_co2_grams&quot;, nullable = false)
+    private double totalCo2Grams;
+
+    @Column(name = &quot;failure_rate_percent&quot;, nullable = false)
+    private double failureRatePercent;
+
+    @Column(name = &quot;recommendations_joined&quot;, length = 2000)
+    private String recommendationsJoined;
+
+    @Column(name = &quot;last_analyzed_at&quot;, nullable = false)
+    private Instant lastAnalyzedAt;
+
+<span class="nc" id="L46">    @OneToMany(mappedBy = &quot;repository&quot;, cascade = CascadeType.ALL, orphanRemoval = true)</span>
+    private List&lt;CiPipelineRun&gt; runs = new ArrayList&lt;&gt;();
+
+<span class="nc" id="L49">    public GitRepository() {}</span>
+
+<span class="nc" id="L51">    public Long getId() { return id; }</span>
+<span class="nc" id="L52">    public GitProvider getProvider() { return provider; }</span>
+<span class="nc" id="L53">    public void setProvider(GitProvider provider) { this.provider = provider; }</span>
+<span class="nc" id="L54">    public String getOwner() { return owner; }</span>
+<span class="nc" id="L55">    public void setOwner(String owner) { this.owner = owner; }</span>
+<span class="nc" id="L56">    public String getRepoName() { return repoName; }</span>
+<span class="nc" id="L57">    public void setRepoName(String repoName) { this.repoName = repoName; }</span>
+<span class="nc" id="L58">    public String getNormalizedUrl() { return normalizedUrl; }</span>
+<span class="nc" id="L59">    public void setNormalizedUrl(String normalizedUrl) { this.normalizedUrl = normalizedUrl; }</span>
+<span class="nc" id="L60">    public double getTotalEnergyKwh() { return totalEnergyKwh; }</span>
+<span class="nc" id="L61">    public void setTotalEnergyKwh(double totalEnergyKwh) { this.totalEnergyKwh = totalEnergyKwh; }</span>
+<span class="nc" id="L62">    public double getTotalCo2Grams() { return totalCo2Grams; }</span>
+<span class="nc" id="L63">    public void setTotalCo2Grams(double totalCo2Grams) { this.totalCo2Grams = totalCo2Grams; }</span>
+<span class="nc" id="L64">    public double getFailureRatePercent() { return failureRatePercent; }</span>
+<span class="nc" id="L65">    public void setFailureRatePercent(double failureRatePercent) { this.failureRatePercent = failureRatePercent; }</span>
+<span class="nc" id="L66">    public String getRecommendationsJoined() { return recommendationsJoined; }</span>
+<span class="nc" id="L67">    public void setRecommendationsJoined(String recommendationsJoined) { this.recommendationsJoined = recommendationsJoined; }</span>
+<span class="nc" id="L68">    public Instant getLastAnalyzedAt() { return lastAnalyzedAt; }</span>
+<span class="nc" id="L69">    public void setLastAnalyzedAt(Instant lastAnalyzedAt) { this.lastAnalyzedAt = lastAnalyzedAt; }</span>
+<span class="nc" id="L70">    public List&lt;CiPipelineRun&gt; getRuns() { return runs; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

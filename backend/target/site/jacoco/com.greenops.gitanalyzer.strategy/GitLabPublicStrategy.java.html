@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GitLabPublicStrategy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">GreenOps Backend</a> &gt; <a href="index.source.html" class="el_package">com.greenops.gitanalyzer.strategy</a> &gt; <span class="el_source">GitLabPublicStrategy.java</span></div><h1>GitLabPublicStrategy.java</h1><pre class="source lang-java linenums">package com.greenops.gitanalyzer.strategy;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.greenops.gitanalyzer.dto.CiRunRawData;
+import com.greenops.gitanalyzer.model.GitProvider;
+import com.greenops.gitanalyzer.parser.ParsedGitUrl;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+public class GitLabPublicStrategy implements GitProviderStrategy {
+
+    private static final String GITLAB_API_BASE = &quot;https://gitlab.com/api/v4&quot;;
+    private final RestClient restClient;
+
+<span class="fc" id="L25">    public GitLabPublicStrategy(RestClient gitAnalyzerRestClient) {</span>
+<span class="fc" id="L26">        this.restClient = gitAnalyzerRestClient;</span>
+<span class="fc" id="L27">    }</span>
+
+    @Override
+    public GitProvider getSupportedProvider() {
+<span class="fc" id="L31">        return GitProvider.GITLAB;</span>
+    }
+
+    @Override
+    public List&lt;CiRunRawData&gt; fetchRecentPipelineRuns(ParsedGitUrl parsedUrl) {
+<span class="fc" id="L36">        String encodedProject = URLEncoder.encode(parsedUrl.fullName(), StandardCharsets.UTF_8);</span>
+<span class="fc" id="L37">        URI listUri = URI.create(String.format(&quot;%s/projects/%s/pipelines?per_page=10&quot;, GITLAB_API_BASE, encodedProject));</span>
+
+        JsonNode pipelineList;
+        try {
+<span class="fc" id="L41">            pipelineList = restClient.get()</span>
+<span class="fc" id="L42">                    .uri(listUri)</span>
+<span class="fc" id="L43">                    .accept(MediaType.APPLICATION_JSON)</span>
+<span class="fc" id="L44">                    .retrieve()</span>
+<span class="fc" id="L45">                    .body(JsonNode.class);</span>
+<span class="nc" id="L46">        } catch (RestClientException e) {</span>
+<span class="nc" id="L47">            throw new IllegalStateException(&quot;Impossible d'interroger l'API publique GitLab pour &quot; + parsedUrl.fullName(), e);</span>
+<span class="fc" id="L48">        }</span>
+
+<span class="fc" id="L50">        List&lt;CiRunRawData&gt; runs = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L51" title="2 of 4 branches missed.">        if (pipelineList == null || !pipelineList.isArray()) {</span>
+<span class="nc" id="L52">            return runs;</span>
+        }
+
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (JsonNode summary : pipelineList) {</span>
+<span class="fc" id="L56">            String pipelineId = summary.path(&quot;id&quot;).asText();</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">            if (pipelineId.isBlank()) {</span>
+<span class="nc" id="L58">                continue;</span>
+            }
+
+<span class="fc" id="L61">            JsonNode detail = fetchPipelineDetail(encodedProject, pipelineId);</span>
+<span class="fc" id="L62">            String ref = detail.path(&quot;ref&quot;).asText(&quot;main&quot;);</span>
+<span class="fc" id="L63">            String status = detail.path(&quot;status&quot;).asText(&quot;unknown&quot;);</span>
+<span class="fc" id="L64">            long durationSeconds = Math.max(0, detail.path(&quot;duration&quot;).asLong(0));</span>
+<span class="fc" id="L65">            String createdAtRaw = detail.path(&quot;created_at&quot;).asText(null);</span>
+<span class="pc bpc" id="L66" title="2 of 4 branches missed.">            Instant createdAt = (createdAtRaw != null &amp;&amp; !createdAtRaw.isBlank())</span>
+<span class="fc" id="L67">                    ? Instant.parse(createdAtRaw)</span>
+<span class="pc" id="L68">                    : Instant.now();</span>
+
+<span class="fc" id="L70">            runs.add(new CiRunRawData(</span>
+                    pipelineId,
+                    &quot;GitLab Pipeline (&quot; + ref + &quot;)&quot;,
+                    status,
+                    status,
+                    durationSeconds,
+                    &quot;LINUX&quot;,
+                    createdAt
+            ));
+<span class="fc" id="L79">        }</span>
+
+<span class="fc" id="L81">        return runs;</span>
+    }
+
+    private JsonNode fetchPipelineDetail(String encodedProject, String pipelineId) {
+<span class="fc" id="L85">        URI detailUri = URI.create(String.format(&quot;%s/projects/%s/pipelines/%s&quot;, GITLAB_API_BASE, encodedProject, pipelineId));</span>
+        try {
+<span class="fc" id="L87">            return restClient.get()</span>
+<span class="fc" id="L88">                    .uri(detailUri)</span>
+<span class="fc" id="L89">                    .accept(MediaType.APPLICATION_JSON)</span>
+<span class="fc" id="L90">                    .retrieve()</span>
+<span class="fc" id="L91">                    .body(JsonNode.class);</span>
+<span class="nc" id="L92">        } catch (RestClientException e) {</span>
+<span class="nc" id="L93">            throw new IllegalStateException(&quot;Erreur lors de la récupération du pipeline GitLab #&quot; + pipelineId, e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GitAnalyzerController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">GreenOps Backend</a> &gt; <a href="index.source.html" class="el_package">com.greenops.gitanalyzer.controller</a> &gt; <span class="el_source">GitAnalyzerController.java</span></div><h1>GitAnalyzerController.java</h1><pre class="source lang-java linenums">package com.greenops.gitanalyzer.controller;
+
+import com.greenops.gitanalyzer.dto.GitAnalysisResultDto;
+import com.greenops.gitanalyzer.dto.GitAnalyzeRequestDto;
+import com.greenops.gitanalyzer.dto.GitHistoryItemDto;
+import com.greenops.gitanalyzer.service.GitAnalyzerService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping(&quot;/api/git&quot;)
+@CrossOrigin(origins = &quot;http://localhost:5173&quot;)
+public class GitAnalyzerController {
+
+    private final GitAnalyzerService analyzerService;
+
+<span class="nc" id="L22">    public GitAnalyzerController(GitAnalyzerService analyzerService) {</span>
+<span class="nc" id="L23">        this.analyzerService = analyzerService;</span>
+<span class="nc" id="L24">    }</span>
+
+    @PostMapping(&quot;/analyze&quot;)
+    public ResponseEntity&lt;GitAnalysisResultDto&gt; analyzeRepository(@Valid @RequestBody GitAnalyzeRequestDto request) {
+<span class="nc" id="L28">        GitAnalysisResultDto result = analyzerService.analyzePublicRepository(request.url());</span>
+<span class="nc" id="L29">        return ResponseEntity.ok(result);</span>
+    }
+
+    @GetMapping(&quot;/history&quot;)
+    public ResponseEntity&lt;List&lt;GitHistoryItemDto&gt;&gt; getHistory() {
+<span class="nc" id="L34">        return ResponseEntity.ok(analyzerService.getAnalysisHistory());</span>
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleBadUrl(IllegalArgumentException ex) {
+<span class="nc" id="L39">        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(&quot;error&quot;, ex.getMessage()));</span>
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleExternalApiError(IllegalStateException ex) {
+<span class="nc" id="L44">        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(&quot;error&quot;, ex.getMessage()));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

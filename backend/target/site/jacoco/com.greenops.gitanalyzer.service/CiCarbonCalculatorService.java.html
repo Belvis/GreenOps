@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CiCarbonCalculatorService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">GreenOps Backend</a> &gt; <a href="index.source.html" class="el_package">com.greenops.gitanalyzer.service</a> &gt; <span class="el_source">CiCarbonCalculatorService.java</span></div><h1>CiCarbonCalculatorService.java</h1><pre class="source lang-java linenums">package com.greenops.gitanalyzer.service;
+
+import com.greenops.gitanalyzer.dto.CiRunEnrichedDto;
+import com.greenops.gitanalyzer.dto.CiRunRawData;
+import com.greenops.gitanalyzer.dto.GitAnalysisResultDto;
+import com.greenops.gitanalyzer.parser.ParsedGitUrl;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+<span class="fc" id="L13">public class CiCarbonCalculatorService {</span>
+
+    public static final double DEFAULT_PUE = 1.20;
+    public static final double DEFAULT_CARBON_INTENSITY_G_PER_KWH = 300.0;
+
+    public static final double POWER_LINUX_KW = 0.15;
+    public static final double POWER_WINDOWS_KW = 0.22;
+    public static final double POWER_MACOS_KW = 0.30;
+
+    public double resolveRunnerPowerKw(String runnerOs) {
+<span class="pc bpc" id="L23" title="1 of 2 branches missed.">        if (runnerOs == null) {</span>
+<span class="nc" id="L24">            return POWER_LINUX_KW;</span>
+        }
+<span class="pc bpc" id="L26" title="1 of 3 branches missed.">        return switch (runnerOs.toUpperCase()) {</span>
+<span class="fc" id="L27">            case &quot;MACOS&quot; -&gt; POWER_MACOS_KW;</span>
+<span class="nc" id="L28">            case &quot;WINDOWS&quot; -&gt; POWER_WINDOWS_KW;</span>
+<span class="fc" id="L29">            default -&gt; POWER_LINUX_KW;</span>
+        };
+    }
+
+    public double calculateEnergyKwh(long durationSeconds, String runnerOs, double pue) {
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (durationSeconds &lt;= 0) {</span>
+<span class="nc" id="L35">            return 0.0;</span>
+        }
+<span class="fc" id="L37">        double hours = durationSeconds / 3600.0;</span>
+<span class="fc" id="L38">        double powerKw = resolveRunnerPowerKw(runnerOs);</span>
+<span class="fc" id="L39">        return hours * powerKw * pue;</span>
+    }
+
+    public double calculateCo2Grams(double energyKwh, double carbonIntensity) {
+<span class="fc" id="L43">        return energyKwh * carbonIntensity;</span>
+    }
+
+    public GitAnalysisResultDto evaluateRepository(ParsedGitUrl parsedUrl, List&lt;CiRunRawData&gt; rawRuns) {
+<span class="fc" id="L47">        List&lt;CiRunEnrichedDto&gt; enrichedRuns = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L48">        long totalDuration = 0;</span>
+<span class="fc" id="L49">        double totalEnergy = 0.0;</span>
+<span class="fc" id="L50">        double totalCo2 = 0.0;</span>
+<span class="fc" id="L51">        long failedCount = 0;</span>
+<span class="fc" id="L52">        boolean hasHeavyOsRunner = false;</span>
+
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        for (CiRunRawData raw : rawRuns) {</span>
+<span class="fc" id="L55">            double energy = calculateEnergyKwh(raw.durationSeconds(), raw.runnerOs(), DEFAULT_PUE);</span>
+<span class="fc" id="L56">            double co2 = calculateCo2Grams(energy, DEFAULT_CARBON_INTENSITY_G_PER_KWH);</span>
+
+<span class="fc" id="L58">            totalDuration += raw.durationSeconds();</span>
+<span class="fc" id="L59">            totalEnergy += energy;</span>
+<span class="fc" id="L60">            totalCo2 += co2;</span>
+
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (isFailed(raw)) {</span>
+<span class="fc" id="L63">                failedCount++;</span>
+            }
+<span class="pc bpc" id="L65" title="1 of 4 branches missed.">            if (&quot;MACOS&quot;.equalsIgnoreCase(raw.runnerOs()) || &quot;WINDOWS&quot;.equalsIgnoreCase(raw.runnerOs())) {</span>
+<span class="fc" id="L66">                hasHeavyOsRunner = true;</span>
+            }
+
+<span class="fc" id="L69">            enrichedRuns.add(new CiRunEnrichedDto(</span>
+<span class="fc" id="L70">                    raw.externalRunId(),</span>
+<span class="fc" id="L71">                    raw.workflowName(),</span>
+<span class="fc" id="L72">                    raw.status(),</span>
+<span class="fc" id="L73">                    raw.conclusion(),</span>
+<span class="fc" id="L74">                    raw.durationSeconds(),</span>
+<span class="fc" id="L75">                    raw.runnerOs(),</span>
+<span class="fc" id="L76">                    round4(energy),</span>
+<span class="fc" id="L77">                    round2(co2),</span>
+<span class="fc" id="L78">                    raw.createdAt()</span>
+            ));
+<span class="fc" id="L80">        }</span>
+
+<span class="fc" id="L82">        int count = rawRuns.size();</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        double failureRate = count == 0 ? 0.0 : (failedCount * 100.0) / count;</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        double avgDuration = count == 0 ? 0.0 : (double) totalDuration / count;</span>
+
+<span class="fc" id="L86">        List&lt;String&gt; recommendations = generateRecommendations(count, avgDuration, failureRate, hasHeavyOsRunner);</span>
+
+<span class="fc" id="L88">        return new GitAnalysisResultDto(</span>
+<span class="fc" id="L89">                parsedUrl.provider(),</span>
+<span class="fc" id="L90">                parsedUrl.owner(),</span>
+<span class="fc" id="L91">                parsedUrl.repo(),</span>
+<span class="fc" id="L92">                parsedUrl.normalizedUrl(),</span>
+                count,
+                totalDuration,
+<span class="fc" id="L95">                round4(totalEnergy),</span>
+<span class="fc" id="L96">                round2(totalCo2),</span>
+<span class="fc" id="L97">                round2(failureRate),</span>
+                enrichedRuns,
+                recommendations
+        );
+    }
+
+    private boolean isFailed(CiRunRawData raw) {
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        String conclusion = raw.conclusion() == null ? &quot;&quot; : raw.conclusion().toLowerCase();</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        String status = raw.status() == null ? &quot;&quot; : raw.status().toLowerCase();</span>
+<span class="pc bpc" id="L106" title="2 of 6 branches missed.">        return conclusion.contains(&quot;fail&quot;) || status.contains(&quot;fail&quot;) || conclusion.contains(&quot;timed_out&quot;);</span>
+    }
+
+    private List&lt;String&gt; generateRecommendations(int count, double avgDurationSeconds, double failureRate, boolean hasHeavyOsRunner) {
+<span class="fc" id="L110">        List&lt;String&gt; tips = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (count == 0) {</span>
+<span class="nc" id="L112">            tips.add(&quot;Aucun pipeline CI/CD récent détecté sur ce dépôt public. Vérifiez l'activation de GitHub Actions ou GitLab CI.&quot;);</span>
+<span class="nc" id="L113">            return tips;</span>
+        }
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (avgDurationSeconds &gt; 180) {</span>
+<span class="fc" id="L116">            tips.add(&quot;Durée moyenne élevée (&quot; + Math.round(avgDurationSeconds) + &quot;s) : activez la mise en cache des dépendances (actions/cache pour Maven/npm) afin de réduire le temps CPU.&quot;);</span>
+        }
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (failureRate &gt; 20.0) {</span>
+<span class="fc" id="L119">            tips.add(&quot;Taux d'échec CI élevé (&quot; + round2(failureRate) + &quot;%) : configurez des hooks de pré-commit locaux (linters/tests rapides) pour éviter des builds énergivores inutiles.&quot;);</span>
+        }
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (hasHeavyOsRunner) {</span>
+<span class="fc" id="L122">            tips.add(&quot;Runners macOS ou Windows détectés : migrez les jobs compatibles vers ubuntu-latest (Linux), jusqu'à 2x moins énergivore.&quot;);</span>
+        }
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        if (tips.isEmpty()) {</span>
+<span class="fc" id="L125">            tips.add(&quot;Bonne sobriété CI/CD : durées maîtrisées et faible taux d'échec. Pensez à déclencher les suites lourdes uniquement sur la branche principale.&quot;);</span>
+        }
+<span class="fc" id="L127">        return tips;</span>
+    }
+
+    private double round4(double val) {
+<span class="fc" id="L131">        return Math.round(val * 10000.0) / 10000.0;</span>
+    }
+
+    private double round2(double val) {
+<span class="fc" id="L135">        return Math.round(val * 100.0) / 100.0;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
