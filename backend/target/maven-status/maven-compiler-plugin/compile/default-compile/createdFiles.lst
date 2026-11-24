@@ -1,4 +1,5 @@
 com\greenops\gitanalyzer\service\GitAnalyzerService.class
+com\greenops\common\SecurityConfig.class
 com\greenops\gitanalyzer\strategy\GitHubPublicStrategy.class
 com\greenops\gitanalyzer\dto\CiRunEnrichedDto.class
 com\greenops\gitanalyzer\dto\GitHistoryItemDto.class
