@@ -25,14 +25,14 @@ public class SecurityConfig {
             throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            .cors(Customizer.withDefaults())   // la CorsConfigurationSource vit dans common/
+            .cors(Customizer.withDefaults())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(e -> e.authenticationEntryPoint(
                     new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/webaudit/**").hasRole("USER")
+                .requestMatchers("/api/webaudit/**", "/api/web-audit/**").hasRole("USER")
                 .requestMatchers("/api/git/**").hasRole("DEV")
                 .requestMatchers("/api/cloud/**").hasRole("INFRA")
                 .anyRequest().authenticated())
@@ -40,7 +40,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /** RBAC cumulatif : un rôle supérieur hérite des droits des rôles inférieurs. */
     @Bean
     public RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.fromHierarchy("""

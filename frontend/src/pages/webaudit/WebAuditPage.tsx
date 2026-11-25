@@ -78,20 +78,27 @@ export function WebAuditPage() {
     setLoading(true);
 
     try {
+      const token = localStorage.getItem('greenops_token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(
         'http://localhost:8080/api/web-audit/analyze',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             url: parsedUrl.toString(),
           }),
         }
       );
 
-      const data = await response.json();
+      const rawText = await response.text();
+      const data = rawText ? JSON.parse(rawText) : {};
 
       if (!response.ok) {
         throw new Error(

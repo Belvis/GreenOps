@@ -29,12 +29,11 @@ export async function apiRequest<T>(endpoint: string, options: ApiRequestOptions
     throw new Error('Session expirée. Veuillez vous reconnecter.');
   }
 
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  const rawText = await response.text();
+  const data = rawText ? JSON.parse(rawText) : null;
 
   if (!response.ok) {
-    const message = data?.error || data?.message || `Erreur serveur (${response.status})`;
-    throw new Error(message);
+    throw new Error(data?.error || data?.message || `Erreur HTTP ${response.status} (réponse vide)`);
   }
 
   return data as T;
@@ -44,11 +43,25 @@ export const apiClient = {
   get: <T>(endpoint: string, options?: ApiRequestOptions) =>
     apiRequest<T>(endpoint, { ...options, method: 'GET' }),
   post: <T>(endpoint: string, body?: unknown, options?: ApiRequestOptions) =>
-    apiRequest<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
+    apiRequest<T>(endpoint, {
+      ...options,
+      method: 'POST',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }),
   put: <T>(endpoint: string, body?: unknown, options?: ApiRequestOptions) =>
-    apiRequest<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+    apiRequest<T>(endpoint, {
+      ...options,
+      method: 'PUT',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }),
   patch: <T>(endpoint: string, body?: unknown, options?: ApiRequestOptions) =>
-    apiRequest<T>(endpoint, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
+    apiRequest<T>(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }),
   delete: <T>(endpoint: string, options?: ApiRequestOptions) =>
     apiRequest<T>(endpoint, { ...options, method: 'DELETE' }),
 };
+
+export default apiClient;
