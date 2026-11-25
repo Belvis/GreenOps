@@ -30,7 +30,7 @@ export function AppLayout() {
     { to: '/audit-web', label: 'Audit Web & EcoIndex', icon: Globe, allowed: true, req: '' },
     { to: '/git-analyzer', label: 'Analyse Git & CI/CD', icon: GitBranch, allowed: ['ROLE_DEV', 'ROLE_ADMIN'].includes(role), req: 'Développeur' },
     { to: '/cloud-simulator', label: 'Simulateur Cloud & RGPD', icon: Cloud, allowed: ['ROLE_INFRA', 'ROLE_RSE', 'ROLE_ADMIN'].includes(role), req: 'Ingénieur Infra' },
-    { to: '/notifications', label: 'Alertes Email (Cron)', icon: Bell, allowed: role !== 'ROLE_USER', req: 'Compte Avancé' },
+    { to: '/notifications', label: 'Alerte mail', icon: Bell, allowed: role !== 'ROLE_USER', req: 'Compte Avancé' },
     { to: '/admin', label: 'Console Admin SaaS', icon: ShieldCheck, allowed: role === 'ROLE_ADMIN', req: 'Super-Admin' },
   ];
 
