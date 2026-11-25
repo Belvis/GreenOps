@@ -12,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.greenops.auth.JwtService;
+import com.greenops.auth.UserRepository;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,12 @@ class CloudSimulatorControllerIntegrationTest {
 
     @MockitoBean
     private CloudSimulationRepository simulationRepository;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Test
     void shouldSimulateAndReturnComparison() throws Exception {
