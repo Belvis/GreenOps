@@ -11,6 +11,7 @@ import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { WebAuditPage } from './pages/webaudit/WebAuditPage';
 import { GitAnalyzerPage } from './pages/gitanalyzer/GitAnalyzerPage';
+import { CloudSimulatorPage } from './pages/cloudsim/CloudSimulatorPage';
 import { AdminConsolePage } from './pages/admin/AdminConsolePage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 
@@ -18,7 +19,7 @@ function PlaceholderPage({ title, owner }: { title: string; owner: string }) {
   return (
     <div className="p-8 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-center space-y-2">
       <h2 className="text-xl font-bold">{title}</h2>
-      <p className="text-sm text-slate-500">Module en cours d'int\u00e9gration ({owner})</p>
+      <p className="text-sm text-slate-500">Module en cours d'intégration ({owner})</p>
     </div>
   );
 }
@@ -57,7 +58,7 @@ export function App() {
                 path="/cloud-simulator"
                 element={
                   <ProtectedRoute allowedRoles={['ROLE_INFRA', 'ROLE_RSE', 'ROLE_ADMIN']}>
-                    <PlaceholderPage title="Module 3 : Simulateur Cloud & RGPD" owner="PINEAU Faizi" />
+                    <CloudSimulatorPage />
                   </ProtectedRoute>
                 }
               />
