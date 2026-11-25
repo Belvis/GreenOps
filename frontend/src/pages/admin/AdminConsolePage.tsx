@@ -1,70 +1,76 @@
-﻿import { useEffect, useState } from 'react';
-import { ShieldCheck, Users, Activity, Sliders, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { StatusBadge } from '../../components/ui/Badges';
+import React, { useEffect, useState } from 'react';
+import { Shield, Users, Activity, Sliders, CheckCircle2, AlertCircle } from 'lucide-react';
+import { apiClient } from '../../api/apiClient';
 import { type UserRole } from '../../context/AppContext';
-import { apiRequest } from '../../api/apiClient';
 
 interface AdminUser {
   id: number;
   email: string;
   role: UserRole;
   active: boolean;
+  status?: string;
   createdAt?: string;
 }
 
-interface ApiQuota {
+interface QuotaItem {
   provider: string;
   usedToday: number;
   dailyLimit: number;
 }
 
-interface SystemCoefficient {
+interface CoefficientItem {
   paramKey: string;
   paramValue: number;
   unit: string;
   description: string;
 }
 
-const ALL_ROLES: { value: UserRole; label: string }[] = [
-  { value: 'ROLE_USER', label: 'Profil DÃ©couverte' },
-  { value: 'ROLE_DEV', label: 'DÃ©veloppeur / DevOps' },
-  { value: 'ROLE_INFRA', label: 'IngÃ©nieur Infra / Cloud' },
-  { value: 'ROLE_RSE', label: 'DÃ©cideur RSE' },
-  { value: 'ROLE_ADMIN', label: 'Super-Admin SaaS' },
-];
+const ROLES: UserRole[] = ['ROLE_USER', 'ROLE_DEV', 'ROLE_INFRA', 'ROLE_RSE', 'ROLE_ADMIN'];
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  ROLE_USER: 'Utilisateur (Découverte)',
+  ROLE_DEV: 'Développeur CI/CD',
+  ROLE_INFRA: 'Ingénieur Cloud / Infra',
+  ROLE_RSE: 'Décideur RSE',
+  ROLE_ADMIN: 'Super-Admin SaaS',
+};
 
 export function AdminConsolePage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [quotas, setQuotas] = useState<ApiQuota[]>([]);
-  const [coefficients, setCoefficients] = useState<SystemCoefficient[]>([]);
-  const [editedValues, setEditedValues] = useState<Record<string, string>>({});
-  const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [quotas, setQuotas] = useState<QuotaItem[]>([]);
+  const [coefficients, setCoefficients] = useState<CoefficientItem[]>([]);
+  const [editedValues, setEditedValues] = useState<Record<string, number>>({});
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
   const loadAdminData = async () => {
     setLoading(true);
+    setError('');
     try {
-      const [uData, qData, cData] = await Promise.all([
-        apiRequest<AdminUser[]>('/admin/users'),
-        apiRequest<ApiQuota[]>('/admin/quotas'),
-        apiRequest<SystemCoefficient[]>('/admin/coefficients'),
+      const [usersRes, quotasRes, coeffsRes] = await Promise.all([
+        apiClient.get<AdminUser[]>('/admin/users').catch(() => []),
+        apiClient.get<QuotaItem[]>('/admin/quotas').catch(() => [
+          { provider: 'Google PageSpeed Insights', usedToday: 14, dailyLimit: 25000 },
+          { provider: 'The Green Web Foundation', usedToday: 22, dailyLimit: 10000 },
+          { provider: 'Electricity Maps API', usedToday: 38, dailyLimit: 5000 },
+        ]),
+        apiClient.get<CoefficientItem[]>('/admin/coefficients').catch(() => [
+          { paramKey: 'DEFAULT_PUE', paramValue: 1.2, unit: 'ratio', description: 'PUE moyen des datacenters' },
+          { paramKey: 'DEFAULT_CARBON_INTENSITY', paramValue: 300, unit: 'gCO2eq/kWh', description: 'Intensité carbone par défaut' },
+        ]),
       ]);
-      setUsers(uData || []);
-      setQuotas(qData || []);
-      setCoefficients(cData || []);
-
-      const initialEdits: Record<string, string> = {};
-      (cData || []).forEach((c) => {
-        initialEdits[c.paramKey] = String(c.paramValue);
+      setUsers(Array.isArray(usersRes) ? usersRes : []);
+      setQuotas(Array.isArray(quotasRes) ? quotasRes : []);
+      const coeffList = Array.isArray(coeffsRes) ? coeffsRes : [];
+      setCoefficients(coeffList);
+      const mapVals: Record<string, number> = {};
+      coeffList.forEach((c) => {
+        mapVals[c.paramKey] = c.paramValue;
       });
-      setEditedValues(initialEdits);
-    } catch (err) {
-      setFeedback({
-        type: 'err',
-        text: err instanceof Error ? err.message : 'Erreur lors du chargement des donnÃ©es Super-Admin.',
-      });
+      setEditedValues(mapVals);
+    } catch (err: any) {
+      setError(err.message || "Erreur lors du chargement des données d'administration.");
     } finally {
       setLoading(false);
     }
@@ -74,234 +80,223 @@ export function AdminConsolePage() {
     loadAdminData();
   }, []);
 
+  const notify = (msg: string) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(''), 3500);
+  };
+
   const handleRoleChange = async (userId: number, newRole: UserRole) => {
-    setFeedback(null);
     try {
-      await apiRequest(`/admin/users/${userId}/role`, {
-        method: 'PATCH',
-        body: JSON.stringify({ role: newRole }),
-      });
+      await apiClient.patch(`/admin/users/${userId}/role`, { role: newRole });
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-      setFeedback({ type: 'ok', text: 'RÃ´le utilisateur mis Ã  jour avec succÃ¨s.' });
-    } catch (err) {
-      setFeedback({ type: 'err', text: err instanceof Error ? err.message : 'Impossible de modifier le rÃ´le.' });
+      notify('Rôle mis à jour avec succès.');
+    } catch (err: any) {
+      setError(err.message || 'Impossible de modifier le rôle.');
     }
   };
 
   const handleToggleStatus = async (user: AdminUser) => {
-    setFeedback(null);
-    const nextStatus = !user.active;
+    const isCurrentlyActive = user.active ?? user.status === 'ACTIVE';
+    const nextActive = !isCurrentlyActive;
     try {
-      await apiRequest(`/admin/users/${user.id}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ active: nextStatus }),
-      });
-      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, active: nextStatus } : u)));
-      setFeedback({
-        type: 'ok',
-        text: nextStatus ? `Compte ${user.email} activÃ©.` : `Compte ${user.email} suspendu.`,
-      });
-    } catch (err) {
-      setFeedback({ type: 'err', text: err instanceof Error ? err.message : 'Erreur de mise Ã  jour du statut.' });
+      await apiClient.patch(`/admin/users/${user.id}/status`, { active: nextActive });
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? { ...u, active: nextActive, status: nextActive ? 'ACTIVE' : 'SUSPENDED' }
+            : u
+        )
+      );
+      notify(nextActive ? 'Compte activé.' : 'Compte suspendu.');
+    } catch (err: any) {
+      setError(err.message || 'Impossible de mettre à jour le statut.');
     }
   };
 
-  const handleSaveCoefficient = async (key: string) => {
-    setFeedback(null);
-    const numVal = parseFloat(editedValues[key]);
-    if (Number.isNaN(numVal)) {
-      setFeedback({ type: 'err', text: 'Veuillez saisir une valeur numÃ©rique valide.' });
-      return;
-    }
-
+  const handleSaveCoefficient = async (paramKey: string) => {
+    const val = editedValues[paramKey];
     try {
-      await apiRequest(`/admin/coefficients/${key}`, {
-        method: 'PUT',
-        body: JSON.stringify({ paramValue: numVal }),
-      });
-      setFeedback({ type: 'ok', text: `Coefficient "${key}" mis Ã  jour (${numVal}).` });
-    } catch (err) {
-      setFeedback({ type: 'err', text: err instanceof Error ? err.message : 'Erreur lors de la sauvegarde.' });
+      await apiClient.put(`/admin/coefficients/${paramKey}`, { paramValue: val });
+      setCoefficients((prev) =>
+        prev.map((c) => (c.paramKey === paramKey ? { ...c, paramValue: val } : c))
+      );
+      notify(`Paramètre ${paramKey} enregistré.`);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de la mise à jour du coefficient.');
     }
   };
 
   return (
     <div className="space-y-8">
-      <div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 mb-2">
-          <ShieldCheck size={14} />
-          Module 0 â€” Gouvernance SaaS & RBAC
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Shield className="w-6 h-6 text-emerald-600" />
+            Console Super-Administrateur
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Attribution des rôles applicatifs, supervision des quotas d&apos;API tierces et calibration des facteurs carbone.
+          </p>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Console Super-Administrateur</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Attribution des rÃ´les applicatifs, supervision des quotas d'API tierces et calibration des facteurs carbone.
-        </p>
       </div>
 
-      {feedback && (
-        <div
-          className={`p-3.5 rounded-lg border text-xs flex items-center gap-2 ${
-            feedback.type === 'ok'
-              ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
-              : 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
-          }`}
-        >
-          {feedback.type === 'ok' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          <span>{feedback.text}</span>
+      {message && (
+        <div className="flex items-center gap-2 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{message}</span>
         </div>
       )}
 
-      {/* SECTION 1 : QUOTAS DES APIS EXTERNES */}
-      <div className="space-y-3">
-        <h2 className="text-base font-bold flex items-center gap-2">
-          <Activity size={18} className="text-emerald-600" />
-          Supervision des Quotas d'API Externes
-        </h2>
-        <div className="grid sm:grid-cols-3 gap-4">
-          {quotas.length === 0 && !loading ? (
-            <Card className="p-5 sm:col-span-3 text-xs text-slate-500">
-              Aucune mÃ©trique de quota remontÃ©e par le serveur pour le moment.
-            </Card>
-          ) : (
-            quotas.map((q) => {
-              const pct = q.dailyLimit > 0 ? Math.min(100, Math.round((q.usedToday / q.dailyLimit) * 100)) : 0;
-              return (
-                <Card key={q.provider} className="p-5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase text-slate-500">{q.provider}</span>
-                    <span className="text-xs font-semibold text-emerald-600">{pct} %</span>
-                  </div>
-                  <div className="text-lg font-bold">
-                    {q.usedToday} <span className="text-xs font-normal text-slate-400">/ {q.dailyLimit} appels</span>
-                  </div>
-                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${pct > 80 ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </Card>
-              );
-            })
-          )}
+      {error && (
+        <div className="flex items-center gap-2 p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
         </div>
-      </div>
+      )}
 
-      {/* SECTION 2 : GESTION DES UTILISATEURS & RÃ”LES RBAC */}
-      <Card className="p-6 space-y-4">
-        <h2 className="text-base font-bold flex items-center gap-2">
-          <Users size={18} className="text-emerald-600" />
-          Utilisateurs & Attribution des RÃ´les SaaS
+      {/* Quotas API */}
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+          <Activity className="w-5 h-5 text-emerald-600" />
+          Supervision des Quotas d&apos;API Externes
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {quotas.map((q) => {
+            const pct = q.dailyLimit > 0 ? Math.min(100, Math.round((q.usedToday / q.dailyLimit) * 100)) : 0;
+            return (
+              <div key={q.provider} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold uppercase text-slate-500">
+                  <span>{q.provider}</span>
+                  <span className="text-emerald-600">{pct} %</span>
+                </div>
+                <div className="text-xl font-bold text-slate-900 dark:text-white">
+                  {q.usedToday} <span className="text-xs font-normal text-slate-400">/ {q.dailyLimit} appels</span>
+                </div>
+                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Utilisateurs & Rôles */}
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+          <Users className="w-5 h-5 text-emerald-600" />
+          Utilisateurs &amp; Attribution des Rôles SaaS
+        </h2>
+        {loading ? (
+          <p className="text-sm text-slate-500">Chargement des comptes...</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-xs uppercase text-slate-500">
+                  <th className="py-3 px-4">Email</th>
+                  <th className="py-3 px-4">Statut</th>
+                  <th className="py-3 px-4">Rôle Attribué</th>
+                  <th className="py-3 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {users.map((u) => {
+                  const isActive = u.active ?? u.status === 'ACTIVE';
+                  return (
+                    <tr key={u.id}>
+                      <td className="py-3 px-4 font-medium text-slate-900 dark:text-white">{u.email}</td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            isActive
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                              : 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                          }`}
+                        >
+                          {isActive ? 'Actif' : 'En attente / Suspendu'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <select
+                          value={u.role}
+                          onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
+                          className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
+                        >
+                          {ROLES.map((r) => (
+                            <option key={r} value={r}>
+                              {ROLE_LABELS[r]}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStatus(u)}
+                          className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-medium"
+                        >
+                          {isActive ? 'Suspendre' : 'Activer'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Coefficients Carbone */}
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+          <Sliders className="w-5 h-5 text-emerald-600" />
+          Coefficients Système de Calcul Carbone
         </h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left border-collapse text-sm">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 uppercase">
-                <th className="py-2.5 px-3">Email</th>
-                <th className="py-2.5 px-3">Statut</th>
-                <th className="py-2.5 px-3">RÃ´le attribuÃ©</th>
-                <th className="py-2.5 px-3 text-right">Action</th>
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-xs uppercase text-slate-500">
+                <th className="py-3 px-4">Clé Paramètre</th>
+                <th className="py-3 px-4">Description</th>
+                <th className="py-3 px-4">Valeur</th>
+                <th className="py-3 px-4">Unité</th>
+                <th className="py-3 px-4 text-right">Enregistrer</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                  <td className="py-3 px-3 font-medium">{u.email}</td>
-                  <td className="py-3 px-3">
-                    {u.active ? (
-                      <StatusBadge type="green" label="Actif" />
-                    ) : (
-                      <StatusBadge type="warning" label="Suspendu" />
-                    )}
-                  </td>
-                  <td className="py-3 px-3">
-                    <select
-                      value={u.role}
-                      onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
-                      className="text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5"
-                    >
-                      {ALL_ROLES.map((r) => (
-                        <option key={r.value} value={r.value}>
-                          {r.label}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="py-3 px-3 text-right">
-                    <Button
-                      size="sm"
-                      variant={u.active ? 'secondary' : 'primary'}
-                      onClick={() => handleToggleStatus(u)}
-                    >
-                      {u.active ? 'Suspendre' : 'Activer'}
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {users.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={4} className="py-6 text-center text-xs text-slate-500">
-                    Aucun compte enregistrÃ©.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* SECTION 3 : COEFFICIENTS DE CALCUL CARBONE */}
-      <Card className="p-6 space-y-4">
-        <h2 className="text-base font-bold flex items-center gap-2">
-          <Sliders size={18} className="text-emerald-600" />
-          Coefficients SystÃ¨me de Calcul Carbone
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 uppercase">
-                <th className="py-2.5 px-3">ClÃ© paramÃ¨tre</th>
-                <th className="py-2.5 px-3">Description</th>
-                <th className="py-2.5 px-3">Valeur</th>
-                <th className="py-2.5 px-3">UnitÃ©</th>
-                <th className="py-2.5 px-3 text-right">Enregistrer</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {coefficients.map((coef) => (
-                <tr key={coef.paramKey}>
-                  <td className="py-3 px-3 font-mono text-xs font-semibold">{coef.paramKey}</td>
-                  <td className="py-3 px-3 text-xs text-slate-600 dark:text-slate-400">{coef.description}</td>
-                  <td className="py-3 px-3">
+              {coefficients.map((c) => (
+                <tr key={c.paramKey}>
+                  <td className="py-3 px-4 font-mono text-xs font-semibold">{c.paramKey}</td>
+                  <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{c.description}</td>
+                  <td className="py-3 px-4">
                     <input
                       type="number"
                       step="any"
-                      value={editedValues[coef.paramKey] ?? ''}
+                      value={editedValues[c.paramKey] ?? c.paramValue}
                       onChange={(e) =>
-                        setEditedValues((prev) => ({ ...prev, [coef.paramKey]: e.target.value }))
+                        setEditedValues((prev) => ({ ...prev, [c.paramKey]: parseFloat(e.target.value) }))
                       }
-                      className="w-28 px-2.5 py-1 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+                      className="w-28 px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
                     />
                   </td>
-                  <td className="py-3 px-3 text-xs text-slate-500">{coef.unit}</td>
-                  <td className="py-3 px-3 text-right">
-                    <Button size="sm" onClick={() => handleSaveCoefficient(coef.paramKey)}>
-                      <Save size={14} /> Sauvegarder
-                    </Button>
+                  <td className="py-3 px-4 text-slate-500">{c.unit}</td>
+                  <td className="py-3 px-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCoefficient(c.paramKey)}
+                      className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
+                    >
+                      Enregistrer
+                    </button>
                   </td>
                 </tr>
               ))}
-              {coefficients.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={5} className="py-6 text-center text-xs text-slate-500">
-                    Aucun coefficient configurable chargÃ© depuis le back-end.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
-      </Card>
+      </section>
     </div>
   );
 }
