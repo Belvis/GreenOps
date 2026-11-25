@@ -1,7 +1,7 @@
-﻿import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Globe, GitBranch, Cloud, Bell, ShieldCheck,
-  Sun, Moon, Lock, LogOut
+  Sun, Moon, Lock, LogOut, User
 } from 'lucide-react';
 import { GreenOpsLogo } from '../ui/GreenOpsLogo';
 import { StatusBadge } from '../ui/Badges';
@@ -16,8 +16,14 @@ const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export function AppLayout() {
-  const { darkMode, toggleDarkMode, role, setRole, userEmail } = useApp();
+  const { darkMode, toggleDarkMode, role, userEmail, logout } = useApp();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const navItems = [
     { to: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard, allowed: true, req: '' },
@@ -76,24 +82,16 @@ export function AppLayout() {
         </div>
 
         <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
-          <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Simulation Rôle RBAC
+          <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+            Connecté : <strong className="text-slate-700 dark:text-slate-200">{userEmail}</strong>
           </div>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as UserRole)}
-            className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2"
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 px-3 py-2 rounded-lg transition-colors cursor-pointer"
           >
-            {Object.entries(ROLE_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>{v}</option>
-            ))}
-          </select>
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-xs text-slate-500 hover:text-rose-600 pt-1"
-          >
-            <LogOut size={14} /> Retour accueil public
-          </Link>
+            <LogOut size={14} /> Se déconnecter
+          </button>
         </div>
       </aside>
 
@@ -112,9 +110,17 @@ export function AppLayout() {
             >
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <div className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              {userEmail}
-            </div>
+            <Link
+              to="/profile"
+              className={
+                location.pathname === '/profile'
+                  ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                  : 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors'
+              }
+            >
+              <User size={16} />
+              <span>Mon profil</span>
+            </Link>
           </div>
         </header>
 
