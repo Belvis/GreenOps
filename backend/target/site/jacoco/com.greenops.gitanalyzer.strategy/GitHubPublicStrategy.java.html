@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GitHubPublicStrategy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">GreenOps Backend</a> &gt; <a href="index.source.html" class="el_package">com.greenops.gitanalyzer.strategy</a> &gt; <span class="el_source">GitHubPublicStrategy.java</span></div><h1>GitHubPublicStrategy.java</h1><pre class="source lang-java linenums">package com.greenops.gitanalyzer.strategy;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.greenops.gitanalyzer.dto.CiRunRawData;
+import com.greenops.gitanalyzer.model.GitProvider;
+import com.greenops.gitanalyzer.parser.ParsedGitUrl;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+public class GitHubPublicStrategy implements GitProviderStrategy {
+
+    private static final String GITHUB_API_BASE = &quot;https://api.github.com&quot;;
+    private final RestClient restClient;
+
+<span class="fc" id="L23">    public GitHubPublicStrategy(RestClient gitAnalyzerRestClient) {</span>
+<span class="fc" id="L24">        this.restClient = gitAnalyzerRestClient;</span>
+<span class="fc" id="L25">    }</span>
+
+    @Override
+    public GitProvider getSupportedProvider() {
+<span class="fc" id="L29">        return GitProvider.GITHUB;</span>
+    }
+
+    @Override
+    public List&lt;CiRunRawData&gt; fetchRecentPipelineRuns(ParsedGitUrl parsedUrl) {
+<span class="fc" id="L34">        String url = String.format(&quot;%s/repos/%s/%s/actions/runs?per_page=10&quot;,</span>
+<span class="fc" id="L35">                GITHUB_API_BASE, parsedUrl.owner(), parsedUrl.repo());</span>
+
+        JsonNode root;
+        try {
+<span class="fc" id="L39">            root = restClient.get()</span>
+<span class="fc" id="L40">                    .uri(url)</span>
+<span class="fc" id="L41">                    .accept(MediaType.APPLICATION_JSON)</span>
+<span class="fc" id="L42">                    .retrieve()</span>
+<span class="fc" id="L43">                    .body(JsonNode.class);</span>
+<span class="nc" id="L44">        } catch (RestClientException e) {</span>
+<span class="nc" id="L45">            throw new IllegalStateException(&quot;Impossible d'interroger l'API publique GitHub pour &quot; + parsedUrl.fullName(), e);</span>
+<span class="fc" id="L46">        }</span>
+
+<span class="fc" id="L48">        List&lt;CiRunRawData&gt; runs = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L49" title="3 of 6 branches missed.">        if (root == null || !root.has(&quot;workflow_runs&quot;) || !root.get(&quot;workflow_runs&quot;).isArray()) {</span>
+<span class="nc" id="L50">            return runs;</span>
+        }
+
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (JsonNode node : root.get(&quot;workflow_runs&quot;)) {</span>
+<span class="fc" id="L54">            String runId = node.path(&quot;id&quot;).asText(&quot;unknown&quot;);</span>
+<span class="fc" id="L55">            String name = node.path(&quot;name&quot;).asText(&quot;CI Workflow&quot;);</span>
+<span class="fc" id="L56">            String status = node.path(&quot;status&quot;).asText(&quot;completed&quot;);</span>
+<span class="fc" id="L57">            String conclusion = node.path(&quot;conclusion&quot;).asText(&quot;unknown&quot;);</span>
+
+<span class="fc" id="L59">            Instant createdAt = parseInstantOrNow(node.path(&quot;created_at&quot;).asText(null));</span>
+<span class="fc" id="L60">            Instant startedAt = parseInstantOrDefault(node.path(&quot;run_started_at&quot;).asText(null), createdAt);</span>
+<span class="fc" id="L61">            Instant updatedAt = parseInstantOrDefault(node.path(&quot;updated_at&quot;).asText(null), startedAt);</span>
+
+<span class="fc" id="L63">            long durationSeconds = Math.max(0, Duration.between(startedAt, updatedAt).getSeconds());</span>
+<span class="fc" id="L64">            String runnerOs = detectRunnerOs(name);</span>
+
+<span class="fc" id="L66">            runs.add(new CiRunRawData(runId, name, status, conclusion, durationSeconds, runnerOs, createdAt));</span>
+<span class="fc" id="L67">        }</span>
+
+<span class="fc" id="L69">        return runs;</span>
+    }
+
+    private Instant parseInstantOrNow(String value) {
+<span class="pc bpc" id="L73" title="2 of 4 branches missed.">        if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L74">            return Instant.now();</span>
+        }
+<span class="fc" id="L76">        return Instant.parse(value);</span>
+    }
+
+    private Instant parseInstantOrDefault(String value, Instant fallback) {
+<span class="pc bpc" id="L80" title="2 of 4 branches missed.">        if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L81">            return fallback;</span>
+        }
+<span class="fc" id="L83">        return Instant.parse(value);</span>
+    }
+
+    private String detectRunnerOs(String workflowName) {
+<span class="fc" id="L87">        String lower = workflowName.toLowerCase();</span>
+<span class="pc bpc" id="L88" title="1 of 4 branches missed.">        if (lower.contains(&quot;macos&quot;) || lower.contains(&quot;ios&quot;)) {</span>
+<span class="fc" id="L89">            return &quot;MACOS&quot;;</span>
+        }
+<span class="pc bpc" id="L91" title="2 of 4 branches missed.">        if (lower.contains(&quot;windows&quot;) || lower.contains(&quot;win&quot;)) {</span>
+<span class="nc" id="L92">            return &quot;WINDOWS&quot;;</span>
+        }
+<span class="fc" id="L94">        return &quot;LINUX&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

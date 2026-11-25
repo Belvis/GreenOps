@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GitAnalyzerService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">GreenOps Backend</a> &gt; <a href="index.source.html" class="el_package">com.greenops.gitanalyzer.service</a> &gt; <span class="el_source">GitAnalyzerService.java</span></div><h1>GitAnalyzerService.java</h1><pre class="source lang-java linenums">package com.greenops.gitanalyzer.service;
+
+import com.greenops.gitanalyzer.dto.*;
+import com.greenops.gitanalyzer.entity.CiPipelineRun;
+import com.greenops.gitanalyzer.entity.GitRepository;
+import com.greenops.gitanalyzer.parser.GitUrlParser;
+import com.greenops.gitanalyzer.parser.ParsedGitUrl;
+import com.greenops.gitanalyzer.repository.GitRepositoryJpaRepository;
+import com.greenops.gitanalyzer.strategy.GitProviderStrategy;
+import com.greenops.gitanalyzer.strategy.GitStrategyFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+
+@Service
+public class GitAnalyzerService {
+
+    private final GitUrlParser urlParser;
+    private final GitStrategyFactory strategyFactory;
+    private final CiCarbonCalculatorService calculatorService;
+    private final GitRepositoryJpaRepository repositoryJpa;
+
+    public GitAnalyzerService(GitUrlParser urlParser,
+                              GitStrategyFactory strategyFactory,
+                              CiCarbonCalculatorService calculatorService,
+<span class="nc" id="L29">                              GitRepositoryJpaRepository repositoryJpa) {</span>
+<span class="nc" id="L30">        this.urlParser = urlParser;</span>
+<span class="nc" id="L31">        this.strategyFactory = strategyFactory;</span>
+<span class="nc" id="L32">        this.calculatorService = calculatorService;</span>
+<span class="nc" id="L33">        this.repositoryJpa = repositoryJpa;</span>
+<span class="nc" id="L34">    }</span>
+
+    @Transactional
+    public GitAnalysisResultDto analyzePublicRepository(String repositoryUrl) {
+<span class="nc" id="L38">        ParsedGitUrl parsedUrl = urlParser.parse(repositoryUrl);</span>
+<span class="nc" id="L39">        GitProviderStrategy strategy = strategyFactory.getStrategy(parsedUrl.provider());</span>
+<span class="nc" id="L40">        List&lt;CiRunRawData&gt; rawRuns = strategy.fetchRecentPipelineRuns(parsedUrl);</span>
+<span class="nc" id="L41">        GitAnalysisResultDto result = calculatorService.evaluateRepository(parsedUrl, rawRuns);</span>
+
+<span class="nc" id="L43">        persistAnalysis(result);</span>
+<span class="nc" id="L44">        return result;</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;GitHistoryItemDto&gt; getAnalysisHistory() {
+<span class="nc" id="L49">        return repositoryJpa.findAllByOrderByLastAnalyzedAtDesc().stream()</span>
+<span class="nc" id="L50">                .map(repo -&gt; new GitHistoryItemDto(</span>
+<span class="nc" id="L51">                        repo.getId(),</span>
+<span class="nc" id="L52">                        repo.getProvider(),</span>
+<span class="nc" id="L53">                        repo.getOwner(),</span>
+<span class="nc" id="L54">                        repo.getRepoName(),</span>
+<span class="nc" id="L55">                        repo.getNormalizedUrl(),</span>
+<span class="nc" id="L56">                        repo.getRuns().size(),</span>
+<span class="nc" id="L57">                        repo.getTotalEnergyKwh(),</span>
+<span class="nc" id="L58">                        repo.getTotalCo2Grams(),</span>
+<span class="nc" id="L59">                        repo.getFailureRatePercent(),</span>
+<span class="nc" id="L60">                        repo.getLastAnalyzedAt(),</span>
+<span class="nc" id="L61">                        splitRecommendations(repo.getRecommendationsJoined())</span>
+                ))
+<span class="nc" id="L63">                .toList();</span>
+    }
+
+    private void persistAnalysis(GitAnalysisResultDto result) {
+<span class="nc" id="L67">        GitRepository entity = repositoryJpa.findByNormalizedUrl(result.normalizedUrl())</span>
+<span class="nc" id="L68">                .orElseGet(GitRepository::new);</span>
+
+<span class="nc" id="L70">        entity.setProvider(result.provider());</span>
+<span class="nc" id="L71">        entity.setOwner(result.owner());</span>
+<span class="nc" id="L72">        entity.setRepoName(result.repo());</span>
+<span class="nc" id="L73">        entity.setNormalizedUrl(result.normalizedUrl());</span>
+<span class="nc" id="L74">        entity.setTotalEnergyKwh(result.totalEnergyKwh());</span>
+<span class="nc" id="L75">        entity.setTotalCo2Grams(result.totalCo2Grams());</span>
+<span class="nc" id="L76">        entity.setFailureRatePercent(result.failureRatePercent());</span>
+<span class="nc" id="L77">        entity.setRecommendationsJoined(String.join(&quot;||&quot;, result.recommendations()));</span>
+<span class="nc" id="L78">        entity.setLastAnalyzedAt(Instant.now());</span>
+
+<span class="nc" id="L80">        entity.getRuns().clear();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        for (CiRunEnrichedDto runDto : result.runs()) {</span>
+<span class="nc" id="L82">            CiPipelineRun runEntity = new CiPipelineRun();</span>
+<span class="nc" id="L83">            runEntity.setRepository(entity);</span>
+<span class="nc" id="L84">            runEntity.setExternalRunId(runDto.externalRunId());</span>
+<span class="nc" id="L85">            runEntity.setWorkflowName(runDto.workflowName());</span>
+<span class="nc" id="L86">            runEntity.setStatus(runDto.status());</span>
+<span class="nc" id="L87">            runEntity.setConclusion(runDto.conclusion());</span>
+<span class="nc" id="L88">            runEntity.setDurationSeconds(runDto.durationSeconds());</span>
+<span class="nc" id="L89">            runEntity.setRunnerOs(runDto.runnerOs());</span>
+<span class="nc" id="L90">            runEntity.setEnergyKwh(runDto.energyKwh());</span>
+<span class="nc" id="L91">            runEntity.setCo2Grams(runDto.co2Grams());</span>
+<span class="nc" id="L92">            runEntity.setRunCreatedAt(runDto.createdAt());</span>
+<span class="nc" id="L93">            entity.getRuns().add(runEntity);</span>
+<span class="nc" id="L94">        }</span>
+
+<span class="nc" id="L96">        repositoryJpa.save(entity);</span>
+<span class="nc" id="L97">    }</span>
+
+    private List&lt;String&gt; splitRecommendations(String joined) {
+<span class="nc bnc" id="L100" title="All 4 branches missed.">        if (joined == null || joined.isBlank()) {</span>
+<span class="nc" id="L101">            return List.of();</span>
+        }
+<span class="nc" id="L103">        return Arrays.asList(joined.split(&quot;\\|\\|&quot;));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
