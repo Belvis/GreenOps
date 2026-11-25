@@ -1,4 +1,4 @@
-﻿spring:
+spring:
   application:
     name: greenops-backend
   datasource:
@@ -32,3 +32,12 @@ greenops:
   apis:
     pagespeed-key: ${PAGESPEED_API_KEY:}
     electricity-maps-key: ${ELECTRICITY_MAPS_API_KEY:}
+  cloudsim:
+    fallback:
+      generic-intensity: ${CLOUDSIM_GENERIC_FALLBACK_INTENSITY:250.0}
+      zones:
+        FR: ${CLOUDSIM_FALLBACK_FR:55.0}
+        DE: ${CLOUDSIM_FALLBACK_DE:350.0}
+        SE: ${CLOUDSIM_FALLBACK_SE:25.0}
+        CH: ${CLOUDSIM_FALLBACK_CH:30.0}
+        US-EAST-1: ${CLOUDSIM_FALLBACK_US_EAST_1:380.0}
