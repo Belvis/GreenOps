@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogIn, AlertCircle, Sun, Moon } from 'lucide-react';
 import { GreenOpsLogo } from '../../components/ui/GreenOpsLogo';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { useApp, UserRole } from '../../context/AppContext';
+import { useApp, type UserRole } from '../../context/AppContext';
 import { apiRequest } from '../../api/apiClient';
 
 interface LoginResponse {
@@ -59,9 +59,9 @@ export function LoginPage() {
       <div className="max-w-md w-full mx-auto my-auto">
         <Card className="p-8 space-y-6">
           <div className="text-center space-y-1">
-            <h1 className="text-2xl font-bold">Connexion à GreenOps</h1>
+            <h1 className="text-2xl font-bold">Connexion Ã  GreenOps</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Accédez à votre espace de pilotage carbone logiciel
+              AccÃ©dez Ã  votre espace de pilotage carbone logiciel
             </p>
           </div>
 
@@ -93,7 +93,7 @@ export function LoginPage() {
                   Mot de passe
                 </label>
                 <Link to="/forgot-password" className="text-xs text-emerald-600 hover:underline">
-                  Mot de passe oublié ?
+                  Mot de passe oubliÃ© ?
                 </Link>
               </div>
               <input
@@ -101,7 +101,7 @@ export function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 className="w-full px-3.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
@@ -115,14 +115,14 @@ export function LoginPage() {
           <p className="text-center text-xs text-slate-500 dark:text-slate-400">
             Pas encore de compte ?{' '}
             <Link to="/register" className="text-emerald-600 font-semibold hover:underline">
-              Créer un compte
+              CrÃ©er un compte
             </Link>
           </p>
         </Card>
       </div>
 
       <div className="text-center text-xs text-slate-400">
-        GreenOps SaaS • Authentification sécurisée JWT
+        GreenOps SaaS â€¢ Authentification sÃ©curisÃ©e JWT
       </div>
     </div>
   );

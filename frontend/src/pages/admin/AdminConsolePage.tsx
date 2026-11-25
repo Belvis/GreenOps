@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { ShieldCheck, Users, Activity, Sliders, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { StatusBadge } from '../../components/ui/Badges';
-import { UserRole } from '../../context/AppContext';
+import { type UserRole } from '../../context/AppContext';
 import { apiRequest } from '../../api/apiClient';
 
 interface AdminUser {
@@ -28,10 +28,10 @@ interface SystemCoefficient {
 }
 
 const ALL_ROLES: { value: UserRole; label: string }[] = [
-  { value: 'ROLE_USER', label: 'Profil Découverte' },
-  { value: 'ROLE_DEV', label: 'Développeur / DevOps' },
-  { value: 'ROLE_INFRA', label: 'Ingénieur Infra / Cloud' },
-  { value: 'ROLE_RSE', label: 'Décideur RSE' },
+  { value: 'ROLE_USER', label: 'Profil DÃ©couverte' },
+  { value: 'ROLE_DEV', label: 'DÃ©veloppeur / DevOps' },
+  { value: 'ROLE_INFRA', label: 'IngÃ©nieur Infra / Cloud' },
+  { value: 'ROLE_RSE', label: 'DÃ©cideur RSE' },
   { value: 'ROLE_ADMIN', label: 'Super-Admin SaaS' },
 ];
 
@@ -63,7 +63,7 @@ export function AdminConsolePage() {
     } catch (err) {
       setFeedback({
         type: 'err',
-        text: err instanceof Error ? err.message : 'Erreur lors du chargement des données Super-Admin.',
+        text: err instanceof Error ? err.message : 'Erreur lors du chargement des donnÃ©es Super-Admin.',
       });
     } finally {
       setLoading(false);
@@ -82,9 +82,9 @@ export function AdminConsolePage() {
         body: JSON.stringify({ role: newRole }),
       });
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
-      setFeedback({ type: 'ok', text: 'Rôle utilisateur mis à jour avec succès.' });
+      setFeedback({ type: 'ok', text: 'RÃ´le utilisateur mis Ã  jour avec succÃ¨s.' });
     } catch (err) {
-      setFeedback({ type: 'err', text: err instanceof Error ? err.message : 'Impossible de modifier le rôle.' });
+      setFeedback({ type: 'err', text: err instanceof Error ? err.message : 'Impossible de modifier le rÃ´le.' });
     }
   };
 
@@ -99,10 +99,10 @@ export function AdminConsolePage() {
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, active: nextStatus } : u)));
       setFeedback({
         type: 'ok',
-        text: nextStatus ? `Compte ${user.email} activé.` : `Compte ${user.email} suspendu.`,
+        text: nextStatus ? `Compte ${user.email} activÃ©.` : `Compte ${user.email} suspendu.`,
       });
     } catch (err) {
-      setFeedback({ type: 'err', text: err instanceof Error ? err.message : 'Erreur de mise à jour du statut.' });
+      setFeedback({ type: 'err', text: err instanceof Error ? err.message : 'Erreur de mise Ã  jour du statut.' });
     }
   };
 
@@ -110,7 +110,7 @@ export function AdminConsolePage() {
     setFeedback(null);
     const numVal = parseFloat(editedValues[key]);
     if (Number.isNaN(numVal)) {
-      setFeedback({ type: 'err', text: 'Veuillez saisir une valeur numérique valide.' });
+      setFeedback({ type: 'err', text: 'Veuillez saisir une valeur numÃ©rique valide.' });
       return;
     }
 
@@ -119,7 +119,7 @@ export function AdminConsolePage() {
         method: 'PUT',
         body: JSON.stringify({ paramValue: numVal }),
       });
-      setFeedback({ type: 'ok', text: `Coefficient "${key}" mis à jour (${numVal}).` });
+      setFeedback({ type: 'ok', text: `Coefficient "${key}" mis Ã  jour (${numVal}).` });
     } catch (err) {
       setFeedback({ type: 'err', text: err instanceof Error ? err.message : 'Erreur lors de la sauvegarde.' });
     }
@@ -130,11 +130,11 @@ export function AdminConsolePage() {
       <div>
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 mb-2">
           <ShieldCheck size={14} />
-          Module 0 — Gouvernance SaaS & RBAC
+          Module 0 â€” Gouvernance SaaS & RBAC
         </div>
         <h1 className="text-2xl font-bold tracking-tight">Console Super-Administrateur</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Attribution des rôles applicatifs, supervision des quotas d'API tierces et calibration des facteurs carbone.
+          Attribution des rÃ´les applicatifs, supervision des quotas d'API tierces et calibration des facteurs carbone.
         </p>
       </div>
 
@@ -160,7 +160,7 @@ export function AdminConsolePage() {
         <div className="grid sm:grid-cols-3 gap-4">
           {quotas.length === 0 && !loading ? (
             <Card className="p-5 sm:col-span-3 text-xs text-slate-500">
-              Aucune métrique de quota remontée par le serveur pour le moment.
+              Aucune mÃ©trique de quota remontÃ©e par le serveur pour le moment.
             </Card>
           ) : (
             quotas.map((q) => {
@@ -187,11 +187,11 @@ export function AdminConsolePage() {
         </div>
       </div>
 
-      {/* SECTION 2 : GESTION DES UTILISATEURS & RÔLES RBAC */}
+      {/* SECTION 2 : GESTION DES UTILISATEURS & RÃ”LES RBAC */}
       <Card className="p-6 space-y-4">
         <h2 className="text-base font-bold flex items-center gap-2">
           <Users size={18} className="text-emerald-600" />
-          Utilisateurs & Attribution des Rôles SaaS
+          Utilisateurs & Attribution des RÃ´les SaaS
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -199,7 +199,7 @@ export function AdminConsolePage() {
               <tr className="border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 uppercase">
                 <th className="py-2.5 px-3">Email</th>
                 <th className="py-2.5 px-3">Statut</th>
-                <th className="py-2.5 px-3">Rôle attribué</th>
+                <th className="py-2.5 px-3">RÃ´le attribuÃ©</th>
                 <th className="py-2.5 px-3 text-right">Action</th>
               </tr>
             </thead>
@@ -241,7 +241,7 @@ export function AdminConsolePage() {
               {users.length === 0 && !loading && (
                 <tr>
                   <td colSpan={4} className="py-6 text-center text-xs text-slate-500">
-                    Aucun compte enregistré.
+                    Aucun compte enregistrÃ©.
                   </td>
                 </tr>
               )}
@@ -254,16 +254,16 @@ export function AdminConsolePage() {
       <Card className="p-6 space-y-4">
         <h2 className="text-base font-bold flex items-center gap-2">
           <Sliders size={18} className="text-emerald-600" />
-          Coefficients Système de Calcul Carbone
+          Coefficients SystÃ¨me de Calcul Carbone
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 dark:border-slate-800 text-xs text-slate-500 uppercase">
-                <th className="py-2.5 px-3">Clé paramètre</th>
+                <th className="py-2.5 px-3">ClÃ© paramÃ¨tre</th>
                 <th className="py-2.5 px-3">Description</th>
                 <th className="py-2.5 px-3">Valeur</th>
-                <th className="py-2.5 px-3">Unité</th>
+                <th className="py-2.5 px-3">UnitÃ©</th>
                 <th className="py-2.5 px-3 text-right">Enregistrer</th>
               </tr>
             </thead>
@@ -294,7 +294,7 @@ export function AdminConsolePage() {
               {coefficients.length === 0 && !loading && (
                 <tr>
                   <td colSpan={5} className="py-6 text-center text-xs text-slate-500">
-                    Aucun coefficient configurable chargé depuis le back-end.
+                    Aucun coefficient configurable chargÃ© depuis le back-end.
                   </td>
                 </tr>
               )}
