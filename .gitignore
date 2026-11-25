@@ -23,4 +23,17 @@
 hs_err_pid*
 replay_pid*
 
+# Maven
 backend/target/
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store

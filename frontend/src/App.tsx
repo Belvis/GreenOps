@@ -9,6 +9,8 @@ import { RegisterPage } from './pages/auth/RegisterPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { AdminConsolePage } from './pages/admin/AdminConsolePage';
+import { WebAuditPage } from './pages/webaudit/WebAuditPage';
+import { GitAnalyzerPage } from './pages/gitanalyzer/GitAnalyzerPage';
 
 function PlaceholderPage({ title, owner }: { title: string; owner: string }) {
   return (
@@ -40,12 +42,12 @@ export function App() {
             }
           >
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/audit-web" element={<PlaceholderPage title="Module 1 : Audit Web & EcoIndex" owner="HAFSAT Marwa" />} />
+            <Route path="/audit-web" element={<WebAuditPage />} />
             <Route
               path="/git-analyzer"
               element={
                 <ProtectedRoute allowedRoles={['ROLE_DEV', 'ROLE_ADMIN']}>
-                  <PlaceholderPage title="Module 2 : Analyseur Git & CI/CD" owner="AGBOTON Belvis" />
+                  <GitAnalyzerPage />
                 </ProtectedRoute>
               }
             />
