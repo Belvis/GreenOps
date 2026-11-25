@@ -1,5 +1,6 @@
 
 import { useState, type FormEvent } from 'react';
+import { useUserActivity, triggerJsonDownload } from '../../context/UserActivityContext';
 
 interface DomAnalysisResult {
   url: string;
@@ -50,6 +51,8 @@ interface WebAuditResult {
 }
 
 export function WebAuditPage() {
+  const { recordSearch, toggleFavorite, downloadItem, items } = useUserActivity();
+  const [lastWebActivityId, setLastWebActivityId] = useState<string | null>(null);
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -106,7 +109,19 @@ export function WebAuditPage() {
         );
       }
 
-      setResult(data as WebAuditResult);
+      const typedResult = data as WebAuditResult;
+      setResult(typedResult);
+      const webUrl = typedResult?.dom?.url || parsedUrl.toString();
+      const ecoScore = typedResult?.ecoIndex?.score;
+      const webGrade = typedResult?.ecoIndex?.grade;
+      const actId = recordSearch({
+        module: 'AUDIT_WEB',
+        title: webUrl,
+        subtitle: 'EcoIndex ' + String(ecoScore ?? 'N/A') + ' (' + String(webGrade ?? '-') + ') • ' + String(typedResult?.dom?.totalElements ?? 0) + ' éléments DOM',
+        route: '/audit-web',
+        payload: typedResult,
+      });
+      setLastWebActivityId(actId);
     } catch (err) {
       if (err instanceof TypeError) {
         setError(
@@ -195,8 +210,57 @@ export function WebAuditPage() {
       </div>
 
       {/* Résultats */}
-      {result && (
+              {result && (
         <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/70 p-4">
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Enregistrer cet audit dans vos favoris ou télécharger le résultat JSON.
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (lastWebActivityId) {
+                    toggleFavorite(lastWebActivityId);
+                  } else {
+                    const id = recordSearch({
+                      module: 'AUDIT_WEB',
+                      title: result.dom?.url || url || 'Audit Web',
+                      subtitle: `EcoIndex ${result.ecoIndex?.score ?? 'N/A'}`,
+                      route: '/audit-web',
+                      payload: result,
+                      favorite: true,
+                    });
+                    setLastWebActivityId(id);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 cursor-pointer"
+              >
+                {items.find((i) => i.id === lastWebActivityId)?.isFavorite ? 'Dans les favoris' : 'Ajouter aux favoris'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (lastWebActivityId) {
+                    downloadItem(lastWebActivityId);
+                  } else {
+                    const id = recordSearch({
+                      module: 'AUDIT_WEB',
+                      title: result.dom?.url || url || 'Audit Web',
+                      subtitle: `EcoIndex ${result.ecoIndex?.score ?? 'N/A'}`,
+                      route: '/audit-web',
+                      payload: result,
+                    });
+                    setLastWebActivityId(id);
+                    triggerJsonDownload('greenops-audit-web.json', result);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 cursor-pointer"
+              >
+                Télécharger
+              </button>
+            </div>
+          </div>
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
               Résultats de l'audit

@@ -1,7 +1,7 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Globe, GitBranch, Cloud, Bell, ShieldCheck,
-  Sun, Moon, Lock, LogOut
+  Sun, Moon, Lock, LogOut, User
 } from 'lucide-react';
 import { GreenOpsLogo } from '../ui/GreenOpsLogo';
 import { StatusBadge } from '../ui/Badges';
@@ -110,9 +110,17 @@ export function AppLayout() {
             >
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <div className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              {userEmail}
-            </div>
+            <Link
+              to="/profile"
+              className={
+                location.pathname === '/profile'
+                  ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                  : 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors'
+              }
+            >
+              <User size={16} />
+              <span>Mon profil</span>
+            </Link>
           </div>
         </header>
 

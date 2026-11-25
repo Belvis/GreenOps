@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useUserActivity, triggerJsonDownload } from '../../context/UserActivityContext';
 import {
   GitBranch,
   Play,
@@ -55,6 +56,8 @@ interface GitHistoryItem {
 const API_BASE = 'http://localhost:8080/api/git';
 
 export const GitAnalyzerPage: React.FC = () => {
+  const { recordSearch, toggleFavorite, downloadItem, items } = useUserActivity();
+  const [lastGitId, setLastGitId] = useState<string | null>(null);
   const [repoUrl, setRepoUrl] = useState('https://github.com/spring-projects/spring-boot');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +106,8 @@ export const GitAnalyzerPage: React.FC = () => {
       }
 
       setResult(payload);
+      const aid = recordSearch({ module: 'GIT_CI', title: (payload?.owner || '') + '/' + (payload?.repo || payload?.repoName || 'Dépôt Git'), subtitle: String(payload?.totalEnergyKwh ?? 0) + ' kWh • ' + String(payload?.totalCo2Grams ?? 0) + ' gCO2eq', route: '/git-analyzer', payload });
+      setLastGitId(aid);
       await fetchHistory();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur réseau vers le serveur GreenOps.');
@@ -198,6 +203,55 @@ export const GitAnalyzerPage: React.FC = () => {
       {/* Résultats de l'analyse */}
       {result && (
         <div className="space-y-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/70 p-4">
+          <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+            Enregistrer cette analyse dans vos favoris ou télécharger le résultat JSON.
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (lastGitId) {
+                  toggleFavorite(lastGitId);
+                } else {
+                  const id = recordSearch({
+                    module: 'GIT_CI',
+                    title: repoUrl || 'Analyse Git & CI/CD',
+                    subtitle: 'Analyse CI/CD',
+                    route: '/git-analyzer',
+                    payload: { repoUrl },
+                    favorite: true,
+                  });
+                  setLastGitId(id);
+                }
+              }}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 cursor-pointer"
+            >
+              {items.find((i) => i.id === lastGitId)?.isFavorite ? 'Dans les favoris' : 'Ajouter aux favoris'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (lastGitId) {
+                  downloadItem(lastGitId);
+                } else {
+                  const id = recordSearch({
+                    module: 'GIT_CI',
+                    title: repoUrl || 'Analyse Git & CI/CD',
+                    subtitle: 'Analyse CI/CD',
+                    route: '/git-analyzer',
+                    payload: { repoUrl },
+                  });
+                  setLastGitId(id);
+                  triggerJsonDownload('greenops-git-ci.json', { repoUrl });
+                }
+              }}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 cursor-pointer"
+            >
+              Télécharger
+            </button>
+          </div>
+        </div>
           {/* Cartes KPI */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
