@@ -41,12 +41,17 @@ public class AuthService {
         if (userRepository.existsByEmailIgnoreCase(req.email())) {
             throw new ApiException(HttpStatus.CONFLICT, "Un compte existe déjà avec cet email");
         }
+        boolean isFirstUser = userRepository.count() == 0;
         User user = new User();
         user.setEmail(req.email().toLowerCase());
         user.setPassword(passwordEncoder.encode(req.password()));
-        user.setRole(Role.ROLE_USER);
-        user.setStatus(UserStatus.PENDING);
+        user.setRole(isFirstUser ? Role.ROLE_ADMIN : Role.ROLE_USER);
+        user.setStatus(isFirstUser ? UserStatus.ACTIVE : UserStatus.PENDING);
         userRepository.save(user);
+
+        if (isFirstUser) {
+            return new MessageResponse("Compte Super-Admin initial créé et activé.");
+        }
         return new MessageResponse("Compte créé. Il sera actif après validation par un administrateur.");
     }
 
