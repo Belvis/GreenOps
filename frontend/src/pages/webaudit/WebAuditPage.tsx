@@ -1,3 +1,4 @@
+import { translateToFr } from '../../utils/translateToFr';
 
 import { useState, type FormEvent } from 'react';
 
@@ -298,7 +299,7 @@ export function WebAuditPage() {
                       className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800"
                     >
                       <p className="text-sm text-slate-500">
-                        {category.title}
+                        {translateToFr(category.title)}
                       </p>
                       <p className="mt-1 text-2xl font-bold text-emerald-600">
                         {category.score} / 100
@@ -339,14 +340,14 @@ export function WebAuditPage() {
                         className="rounded-lg border border-slate-200 p-4 dark:border-slate-700"
                       >
                         <p className="font-medium text-slate-900 dark:text-white">
-                          {recommendation.title}
+                          {translateToFr(recommendation.title)}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
-                          {recommendation.description}
+                          {translateToFr(recommendation.description)}
                         </p>
                         {recommendation.displayValue && (
                           <p className="mt-2 text-sm text-amber-600">
-                            {recommendation.displayValue}
+                            {translateToFr(recommendation.displayValue)}
                           </p>
                         )}
                       </div>

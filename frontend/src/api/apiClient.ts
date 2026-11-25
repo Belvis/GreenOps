@@ -22,13 +22,6 @@ export async function apiRequest<T>(endpoint: string, options: ApiRequestOptions
     headers: mergedHeaders,
   });
 
-  if (response.status === 401 && !skipAuth) {
-    localStorage.removeItem('greenops_token');
-    localStorage.removeItem('greenops_user');
-    window.location.href = '/login';
-    throw new Error('Session expirée. Veuillez vous reconnecter.');
-  }
-
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
 

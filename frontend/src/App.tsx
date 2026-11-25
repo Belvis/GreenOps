@@ -1,3 +1,4 @@
+import { GitAnalyzerPage } from './pages/gitanalyzer/GitAnalyzerPage';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import { AppLayout } from './components/layout/AppLayout';
@@ -44,7 +45,7 @@ export function App() {
               path="/git-analyzer"
               element={
                 <ProtectedRoute allowedRoles={['ROLE_DEV', 'ROLE_ADMIN']}>
-                  <PlaceholderPage title="Module 2 : Analyseur Git & CI/CD" owner="AGBOTON Belvis" />
+                  <GitAnalyzerPage />
                 </ProtectedRoute>
               }
             />

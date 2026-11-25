@@ -10,3 +10,8 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+
+greenops:
+  apis:
+    pagespeed-key: ${PAGESPEED_API_KEY:}
+    electricity-maps-key: ${ELECTRICITY_MAPS_API_KEY:}
